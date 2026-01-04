@@ -373,6 +373,131 @@ app.get('/admin/users/:id', requireAdmin, async (req, res) => {
   }
 });
 
+// Show edit user form (admin only)
+app.get('/admin/users/:id/edit', requireAdmin, async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const userResult = await db.query(
+      'SELECT id, email, role FROM users WHERE id = $1',
+      [req.session.userId]
+    );
+    const user = userResult.rows[0];
+
+    const editUserResult = await db.query(
+      'SELECT id, email, role, created_at FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (editUserResult.rows.length === 0) {
+      return res.status(404).send('User not found');
+    }
+
+    const editUser = editUserResult.rows[0];
+
+    res.render('admin-edit-user', { user, editUser, error: null });
+  } catch (error) {
+    console.error('Error loading edit user form:', error);
+    res.status(500).send('Error loading form');
+  }
+});
+
+// Update user (admin only)
+app.post('/admin/users/:id/edit', requireAdmin, async (req, res) => {
+  const userId = req.params.id;
+  const { email, role, password } = req.body;
+
+  try {
+    const userResult = await db.query(
+      'SELECT id, email, role FROM users WHERE id = $1',
+      [req.session.userId]
+    );
+    const user = userResult.rows[0];
+
+    const editUserResult = await db.query(
+      'SELECT id, email, role, created_at FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (editUserResult.rows.length === 0) {
+      return res.status(404).send('User not found');
+    }
+
+    const editUser = editUserResult.rows[0];
+
+    // Validate input
+    if (!email || !role) {
+      return res.render('admin-edit-user', {
+        user,
+        editUser,
+        error: 'Email and role are required'
+      });
+    }
+
+    if (role !== 'user' && role !== 'admin') {
+      return res.render('admin-edit-user', {
+        user,
+        editUser,
+        error: 'Invalid role'
+      });
+    }
+
+    // Check if email is already taken by another user
+    const existingUser = await db.query(
+      'SELECT id FROM users WHERE email = $1 AND id != $2',
+      [email, userId]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.render('admin-edit-user', {
+        user,
+        editUser,
+        error: 'A user with this email already exists'
+      });
+    }
+
+    // Update user email and role
+    await db.query(
+      'UPDATE users SET email = $1, role = $2 WHERE id = $3',
+      [email, role, userId]
+    );
+
+    // Update password if provided
+    if (password && password.trim() !== '') {
+      if (password.length < 6) {
+        return res.render('admin-edit-user', {
+          user,
+          editUser: { ...editUser, email, role },
+          error: 'Password must be at least 6 characters'
+        });
+      }
+
+      const passwordHash = await bcrypt.hash(password, 10);
+      await db.query(
+        'UPDATE users SET password_hash = $1 WHERE id = $2',
+        [passwordHash, userId]
+      );
+    }
+
+    res.redirect('/admin/users');
+  } catch (error) {
+    console.error('Error updating user:', error);
+    const userResult = await db.query(
+      'SELECT id, email, role FROM users WHERE id = $1',
+      [req.session.userId]
+    );
+    const editUserResult = await db.query(
+      'SELECT id, email, role, created_at FROM users WHERE id = $1',
+      [userId]
+    );
+    res.render('admin-edit-user', {
+      user: userResult.rows[0],
+      editUser: editUserResult.rows[0],
+      error: 'An error occurred. Please try again.'
+    });
+  }
+});
+
 // Show donation form for specific user (admin only)
 app.get('/admin/users/:id/donations/new', requireAdmin, async (req, res) => {
   const userId = req.params.id;
