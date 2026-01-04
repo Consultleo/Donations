@@ -1,0 +1,90 @@
+<% const layoutData={ title: `User: ${viewedUser.email}`, user: user, body: ` <div
+    style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
+    <h2 style="color: #333; margin-bottom: 20px;">👤 User Details</h2>
+
+    <div style="display: grid; gap: 15px; margin-bottom: 30px;">
+        <div>
+            <strong style="color: #666; font-size: 14px;">Email:</strong>
+            <p style="color: #333; font-size: 16px; margin-top: 5px;">${viewedUser.email}</p>
+        </div>
+        <div>
+            <strong style="color: #666; font-size: 14px;">Role:</strong>
+            <p style="margin-top: 5px;">
+                <span
+                    style="padding: 4px 12px; background: ${viewedUser.role === 'admin' ? '#667eea' : '#f093fb'}; color: white; border-radius: 12px; font-size: 13px; font-weight: 500;">
+                    ${viewedUser.role === 'admin' ? '👑 Admin' : '👤 User'}
+                </span>
+            </p>
+        </div>
+        <div>
+            <strong style="color: #666; font-size: 14px;">Member Since:</strong>
+            <p style="color: #333; font-size: 16px; margin-top: 5px;">
+                ${new Date(viewedUser.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day:
+                'numeric' })}
+            </p>
+        </div>
+    </div>
+
+    <a href="/admin/users/${viewedUser.id}/donations/new"
+        style="display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">
+        💝 Add Donation for This User
+    </a>
+    </div>
+
+    <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h3 style="color: #333; margin-bottom: 20px; font-size: 20px;">📊 Donation History</h3>
+
+        ${donations.length === 0 ? `
+        <p style="color: #666; text-align: center; padding: 40px;">
+            No donations yet. <a href="/admin/users/${viewedUser.id}/donations/new" style="color: #667eea;">Add the
+                first donation!</a>
+        </p>
+        ` : `
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid #dee2e6;">
+                    <th style="padding: 12px; text-align: left; color: #666; font-weight: 600; font-size: 14px;">Date
+                    </th>
+                    <th style="padding: 12px; text-align: right; color: #666; font-weight: 600; font-size: 14px;">Amount
+                    </th>
+                    <th style="padding: 12px; text-align: left; color: #666; font-weight: 600; font-size: 14px;">Note
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                ${donations.map(d => `
+                <tr style="border-bottom: 1px solid #e9ecef;">
+                    <td style="padding: 12px; color: #333; font-size: 14px;">
+                        ${new Date(d.donated_on).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day:
+                        'numeric' })}
+                    </td>
+                    <td style="padding: 12px; text-align: right; color: #333; font-weight: 500; font-size: 14px;">
+                        ${parseFloat(d.amount).toFixed(2)} ${d.currency}
+                    </td>
+                    <td style="padding: 12px; color: #666; font-size: 14px;">
+                        ${d.note || '<em style="color: #999;">No note</em>'}
+                    </td>
+                </tr>
+                `).join('')}
+            </tbody>
+            <tfoot>
+                <tr style="border-top: 2px solid #dee2e6;">
+                    <td style="padding: 12px; font-weight: 600; color: #333;">Total</td>
+                    <td style="padding: 12px; text-align: right; font-weight: 600; color: #667eea; font-size: 16px;">
+                        ${donations.reduce((sum, d) => sum + parseFloat(d.amount), 0).toFixed(2)} EUR
+                    </td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+        `}
+
+        <div style="margin-top: 30px;">
+            <a href="/admin/users" style="color: #667eea; text-decoration: none; font-size: 14px;">← Back to Users
+                List</a>
+        </div>
+    </div>
+    `
+    };
+    %>
+    <%- include('layout', layoutData) %>
